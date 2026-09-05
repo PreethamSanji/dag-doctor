@@ -49,7 +49,7 @@ class Label(BaseModel):
     injection_vector: str | None = Field(
         default=None, description="Where the payload rides: task_log, dag_source, task_note"
     )
-    #: Authored by us, or written back from a dashboard thumb. Feedback is data.
+    #: "authored" by us, or "human" from a dashboard thumb.
     source: Literal["authored", "human"] = "authored"
     notes: str | None = None
 

@@ -18,7 +18,7 @@ tags: [config_error]
 
 # Variables
 
-Variable.get raises KeyError when the key is absent.
+Variable.get raises KeyError when the key is missing.
 
 # Connections
 
@@ -123,7 +123,7 @@ def test_memory_store_round_trips_and_ranks(tmp_path):
 
     assert results[0].chunk.text.count("AirflowNotFoundException") == 1
     assert results[0].score >= results[1].score
-    # A fresh handle reads the persisted index.
+    # A new handle reads the saved index.
     assert MemoryStore(tmp_path / "index.json").count() == 2
 
 

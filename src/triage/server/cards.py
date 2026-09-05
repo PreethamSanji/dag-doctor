@@ -66,7 +66,7 @@ class CardStore:
         self.root = Path(root)
 
     def _path(self, card_id: str) -> Path:
-        # Card ids come from URLs; refuse anything that could escape the store.
+        # Card ids come from URLs — block path traversal.
         if card_id != _slug(card_id, limit=128):
             raise KeyError(card_id)
         return self.root / f"{card_id}.json"

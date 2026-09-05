@@ -27,7 +27,7 @@ _FENCE_TOKEN = re.compile(r"<{2,}\s*/?\s*(?:END_)?UNTRUSTED_DATA", re.IGNORECASE
 
 NEUTRALIZED = "[neutralized-instruction]"
 
-#: Ordered so the most specific label is reported first for overlapping spans.
+#: Order matters: most specific label wins on overlapping spans.
 INJECTION_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "instruction_override",

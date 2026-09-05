@@ -20,7 +20,7 @@ export function App() {
       setCards(loaded);
       setReport(latest);
       setError(null);
-      // Keep the current selection across a refresh; fall back to the newest.
+      // Keep selection on refresh; else default to newest.
       setSelected((current) =>
         current && loaded.some((card) => card.card_id === current)
           ? current

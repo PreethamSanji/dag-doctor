@@ -66,7 +66,7 @@ def test_injection_sets_flag_and_neutralizes_span():
     assert "injection_detected" in result.flags
     assert NEUTRALIZED in result.text
     assert "Ignore all previous instructions" not in result.text
-    # The real failure survives sanitization - that is the whole point.
+    # The real failure must survive sanitization — that's the whole point.
     assert "isn't defined" in result.text
 
 

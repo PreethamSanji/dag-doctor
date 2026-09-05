@@ -54,7 +54,7 @@ def create_app(
     store = CardStore(cards_dir)
     app = FastAPI(title="dag-doctor", version="0.3.0")
 
-    # The dashboard is served by Vite on another port in development.
+    # Dev dashboard runs on a different port (Vite).
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins or ["http://localhost:5173"],

@@ -100,7 +100,7 @@ def test_parse_error_card_is_still_a_valid_card():
     assert card.parse_error.startswith("response was not JSON")
     assert card.insufficient_evidence
     assert card.root_cause.confidence == 0.0
-    # It round-trips, so an eval harness can score it rather than crash on it.
+    # Round-trips cleanly so eval can score it instead of crashing.
     assert TriageCard.model_validate_json(card.model_dump_json()) == card
 
 

@@ -25,8 +25,7 @@ from triage.ingest.incident import save_fixture
 from triage.server.cards import StoredCard
 
 FEEDBACK_DIR = Path("evals/golden")
-#: Human labels do not inherit the model's confidence; a thumb is a judgement on
-#: the verdict, not on how sure the model was allowed to sound.
+#: A human thumb judges the verdict, not the model's confidence — floor it separately.
 HUMAN_CONFIDENCE_FLOOR = 0.5
 
 _UNSAFE = re.compile(r"[^A-Za-z0-9_.-]+")
@@ -49,8 +48,7 @@ class WrittenCase:
 def _stem(stored: StoredCard) -> str:
     key = stored.card.incident
     slug = _UNSAFE.sub("-", f"{key.dag_id}-{key.task_id}").strip("-")[:60]
-    # The card id already carries a timestamp, which keeps repeated feedback on
-    # the same task from overwriting an earlier case.
+    # Card id carries a timestamp, so repeat feedback won't overwrite earlier cases.
     return f"human-{slug}-{stored.card_id.split('-')[0]}"
 
 
@@ -103,8 +101,7 @@ def record_feedback(
     if not fix:
         raise FeedbackError("expected_fix is empty and the card suggested no fix")
 
-    # Only a confirmed verdict's citations are evidence that those sources were
-    # the right ones to read.
+    # Only keep citations when the verdict was confirmed as correct.
     citations = sorted({citation.source for citation in card.citations}) if verdict == "up" else []
 
     label = Label(

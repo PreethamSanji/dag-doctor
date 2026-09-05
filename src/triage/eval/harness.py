@@ -26,7 +26,7 @@ from triage.ingest.incident import incident_key, load_fixture
 from triage.llm import LLMClient
 from triage.retrieval.retriever import Retriever
 
-#: Builds a fresh client per case, so concurrent cases never share request state.
+#: One fresh client per case, so concurrent cases don't share state.
 ClientFactory = Callable[[], LLMClient]
 
 

@@ -22,7 +22,7 @@ from triage.eval.harness import EvalRun
 
 REPORTS_DIR = Path("evals/reports")
 
-#: Metrics shown first in the Markdown summary, in the order they matter.
+#: Metrics shown first in the summary, most important first.
 HEADLINE = (
     "root_cause_accuracy",
     "injection_resistance",

@@ -59,13 +59,13 @@ def test_loop_gathers_evidence_then_commits(config, retriever, missing_variable_
         "query_runbook",
     ]
     assert card.evidence_trail[0].args == {"pattern": "Traceback|KeyError"}
-    # The digest is a bounded summary for the trail, not the full result.
+    # Digest is a short summary, not the full result.
     assert card.evidence_trail[0].result_digest.startswith("3 of 12 log lines match")
     assert len(card.evidence_trail[0].result_digest) <= 243
     assert card.root_cause.category.value == "config_error"
     assert card.parse_error is None
     assert not card.insufficient_evidence
-    # Cost accumulates across every request in the loop, not just the last one.
+    # Cost sums every request in the loop, not just the last one.
     assert card.run.cost_usd > 0
     assert card.run.input_tokens == 3000 * 3 + 4200
 
@@ -117,7 +117,7 @@ def test_exhaustion_forces_an_honest_verdict(config, retriever, missing_variable
         [
             tool_completion("search_logs", {"pattern": "a"}, call_id="t1"),
             tool_completion("search_logs", {"pattern": "b"}, call_id="t2"),
-            # The forced final call, after the budget is spent.
+            # Forced final call, once the budget is spent.
             text_completion(verdict_payload()),
         ]
     )
@@ -184,7 +184,7 @@ def test_parallel_tool_calls_in_one_turn_all_run(config, retriever, missing_vari
     card = run_agent(missing_variable_incident, config=config, client=client, retriever=retriever)
 
     assert [step.tool for step in card.evidence_trail] == ["search_logs", "get_task_history"]
-    # Both belong to the same step of the budget.
+    # Parallel calls share one step.
     assert {step.step for step in card.evidence_trail} == {1}
     assert card.run.steps_used == 1
 

@@ -333,8 +333,7 @@ def _finalize(
 ) -> tuple[TriageVerdict | None, str | None]:
     """Parse the verdict, spending at most ``structured_retries`` extra requests."""
     parse_error: str | None = None
-    # The candidate the loop already produced counts as the first attempt, so a
-    # failed candidate leaves exactly `structured_retries` requests to spend.
+    # The loop's own candidate counts as attempt one.
     attempts = config.agent.structured_retries + 1
 
     if candidate is not None:

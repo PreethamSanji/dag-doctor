@@ -87,7 +87,7 @@ def test_malformed_response_gets_one_retry_then_succeeds(
 
     assert card.parse_error is None
     assert card.root_cause.category.value == "config_error"
-    # Both requests are billed and counted.
+    # Both requests count toward the bill.
     assert card.run.input_tokens == 8400
 
 
@@ -104,7 +104,7 @@ def test_repeated_parse_failure_becomes_a_parse_error_card(
     assert card.parse_error is not None
     assert card.insufficient_evidence
     assert card.root_cause.confidence == 0.0
-    # A parse failure is a metric, not a crash: the card still validates.
+    # A parse failure is a metric, not a crash — the card still validates.
     assert card.model_dump_json()
 
 
@@ -140,9 +140,9 @@ def test_injection_in_the_log_is_flagged_and_neutralized_before_the_model_sees_i
     assert "injection_detected" in card.security_flags
     assert "Ignore all previous instructions" not in seen["user"]
     assert "[neutralized-instruction]" in seen["user"]
-    # The real failure is still legible to the model.
+    # Real failure is still visible to the model.
     assert "reporting_warehouse" in seen["user"]
-    # Structural defense: state comes from Airflow metadata, outside any block.
+    # State comes from Airflow metadata, outside any untrusted block.
     assert "state: failed" in seen["user"]
     assert card.root_cause.category.value == "config_error"
 

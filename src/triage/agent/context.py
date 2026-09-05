@@ -104,9 +104,8 @@ def build_incident_context(incident: Incident, config: Config) -> IncidentContex
     context = IncidentContext(metadata=render_metadata(incident))
     caps = config.security
 
-    # The note is rendered as metadata rather than as an untrusted block, so it
-    # never passes through sanitize(); flag it here or a payload typed into the
-    # note would reach context unmeasured.
+    # The note is metadata, not an untrusted block, so it skips sanitize().
+    # Check it here instead.
     if incident.task_instance.note and detect_injection(incident.task_instance.note):
         context.security_flags.append("injection_detected")
 

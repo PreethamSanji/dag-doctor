@@ -29,7 +29,7 @@ def test_valid_citation_survives_and_gets_provenance_from_us():
 
     assert result.dropped == []
     assert result.groundedness == 1.0
-    # Provenance is rewritten from the index, never trusted from the model.
+    # Source is taken from the index, never trusted from the model.
     assert result.kept[0].source == "corpus/helm/values.yaml"
 
 

@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS {table} (
 );
 """
 
-# Cosine distance; the ivfflat index needs the matching operator class.
+# Cosine distance, matching the ivfflat operator class below.
 _INDEX = """
 CREATE INDEX IF NOT EXISTS {table}_embedding_idx
     ON {table} USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
@@ -90,8 +90,7 @@ class PgVectorStore:
         ]
 
         with self._connect() as conn, conn.cursor() as cur:
-            # A dimension change means the old vectors are meaningless, so the
-            # table is dropped rather than migrated.
+            # A dimension change makes old vectors useless, so drop instead of migrate.
             cur.execute(f"DROP TABLE IF EXISTS {self._table};")
             cur.execute(_CREATE.format(table=self._table, dim=embedder.dim))
             cur.executemany(

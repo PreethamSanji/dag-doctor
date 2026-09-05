@@ -12,8 +12,7 @@ from dataclasses import dataclass
 
 from triage.retrieval.corpus import Document
 
-#: Rough words-per-token ratio for English prose plus code. We chunk on words
-#: because the tokenizer we would need is model-specific and network-bound.
+#: Rough words-per-token ratio. We chunk on words to avoid a network-bound tokenizer.
 WORDS_PER_TOKEN = 0.75
 
 

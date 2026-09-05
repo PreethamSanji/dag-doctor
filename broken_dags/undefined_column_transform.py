@@ -29,7 +29,7 @@ def undefined_column_transform():
     @task
     def transform(rows: list[dict]) -> list[dict]:
         print(f"Transforming {len(rows)} rows")
-        # The producer emits `amount_cents`; this reads `amount_usd`.
+        # Bug: producer emits `amount_cents`, this reads `amount_usd`.
         return [{"customer_id": row["customer_id"], "usd": row["amount_usd"] / 100} for row in rows]
 
     transform(build_rows())

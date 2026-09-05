@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from triage.card.schema import Citation
 
 _WS = re.compile(r"\s+")
-#: A quote shorter than this is too weak to verify meaningfully.
+#: Quotes shorter than this can't be verified.
 MIN_QUOTE_CHARS = 12
 
 

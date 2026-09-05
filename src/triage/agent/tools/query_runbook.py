@@ -60,8 +60,7 @@ class QueryRunbook:
                 source=source,
             )
 
-        # The loop registers each chunk under its own id, so the model can cite
-        # the chunk rather than this tool result.
+        # Register chunks by id so the model cites the chunk, not this tool call.
         ctx.extras.setdefault("retrieved_chunks", []).extend(result.chunk for result in results)
 
         rendered = [

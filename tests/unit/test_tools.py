@@ -108,7 +108,7 @@ def test_query_runbook_returns_chunks_with_ids(tools, ctx):
 
     assert not output.failed
     assert output.content.count("[chunk_id=") == 3
-    # Chunks are staged for the loop to register under their own ids.
+    # Chunks are staged here for the loop to register by id.
     assert len(ctx.extras["retrieved_chunks"]) == 3
 
 

@@ -1,5 +1,4 @@
-// Mirrors src/triage/card/schema.py, which is the single source of truth.
-// When the card schema changes, this file changes in the same commit.
+// Mirrors src/triage/card/schema.py. Update both in the same commit.
 
 export const TAXONOMY = [
   "code_error",

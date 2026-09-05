@@ -12,8 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
-#: USD per million tokens, by model. Used for the ``cost_usd`` on every card and
-#: for the cost-per-triage eval metric. Keep in sync with Anthropic's pricing.
+#: USD per million tokens, by model. Keep in sync with Anthropic's pricing.
 PRICING_PER_MTOK: dict[str, tuple[float, float]] = {
     "claude-opus-5": (5.00, 25.00),
     "claude-opus-4-8": (5.00, 25.00),

@@ -61,7 +61,7 @@ def test_rebuild_then_search_ranks_the_right_document(store):
     assert len(results) == 3
     assert results[0].score >= results[-1].score
     assert any("SIGKILL" in result.chunk.text for result in results)
-    # Provenance survives the round trip - citations depend on it.
+    # Provenance must survive the round trip; citations depend on it.
     assert all(result.chunk.source_url for result in results)
 
 

@@ -16,8 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class TaskInstance(BaseModel):
     """One task instance as Airflow reports it."""
 
-    # ``populate_by_name`` lets a frozen fixture (which serializes ``run_id``)
-    # round-trip through the same model as a live API payload (``dag_run_id``).
+    # Lets fixtures using `run_id` load like a live payload using `dag_run_id`.
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
     dag_id: str

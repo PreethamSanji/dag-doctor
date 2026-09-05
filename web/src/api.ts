@@ -6,7 +6,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   });
   if (!response.ok) {
-    // FastAPI puts the reason in `detail`; surface it rather than a bare status.
+    // FastAPI errors put the message in `detail`.
     const body = await response.json().catch(() => null);
     throw new Error(body?.detail ?? `${response.status} ${response.statusText}`);
   }

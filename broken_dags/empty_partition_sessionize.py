@@ -10,7 +10,7 @@ from __future__ import annotations
 import pendulum
 from airflow.decorators import dag, task
 
-#: Stands in for the producing job's output. Empty today: the producer is paused.
+#: The upstream producer is paused, so this is empty.
 PARTITION_FILES: list[str] = []
 
 

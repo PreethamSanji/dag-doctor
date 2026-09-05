@@ -75,7 +75,7 @@ def test_store_round_trips_card_and_incident(store, missing_variable_incident):
     stored = store.get(card_id)
 
     assert stored.card.root_cause.category is RootCauseCategory.CONFIG_ERROR
-    # The incident is kept so feedback can be promoted into a golden case.
+    # Incident is kept so feedback can become a golden case.
     assert stored.incident.task_instance.dag_id == "missing_variable_extract"
 
 
@@ -127,7 +127,7 @@ def test_thumbs_down_records_the_correction(store, missing_variable_incident, tm
     label = load_label(written.label_path)
     assert label.root_cause.value == "code_error"
     assert label.expected_fix == "Fix the column name in transform"
-    # A corrected card's citations are not evidence of the right sources.
+    # A correction drops citations; they weren't verified as correct.
     assert label.expected_citations == []
     assert label.notes
 

@@ -20,8 +20,7 @@ from triage.ingest.models import (
     TaskRunSummary,
 )
 
-#: Airflow's log endpoint returns the log wrapped in a Python-repr-ish envelope
-#: when ``full_content`` is requested as text. Strip it to get the real body.
+#: Airflow wraps `full_content` logs in a repr-like envelope. Strip it to get the raw text.
 _LOG_ENVELOPE = re.compile(r"\A\s*\[\('[^']*',\s*[\"'](.*)[\"']\)\]\s*\Z", re.DOTALL)
 
 
