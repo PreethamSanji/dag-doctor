@@ -1,8 +1,8 @@
 """The `triage` CLI.
 
-The command surface is a contract (see CLAUDE.md). Commands that belong to a
-later milestone exist here and say so, rather than being improvised into some
-alternate path.
+The command surface is a contract (see CLAUDE.md): ``index`` builds the
+retrieval index, ``run`` triages one failure, ``eval`` gates the golden set, and
+``serve`` exposes what those produced to the dashboard.
 """
 
 from __future__ import annotations
@@ -27,7 +27,9 @@ from triage.eval.report import REPORTS_DIR, write_report
 from triage.ingest.airflow_client import AirflowClient
 from triage.ingest.incident import ingest_incident, load_fixture, save_fixture
 from triage.llm import build_client
+from triage.metrics import record_card
 from triage.retrieval.retriever import Retriever
+from triage.server.cards import CARDS_DIR, CardStore
 
 app = typer.Typer(
     name="triage",
@@ -81,6 +83,12 @@ def run(
         typer.Option("--save-fixture", help="Freeze the ingested incident to this path"),
     ] = None,
     as_json: Annotated[bool, typer.Option("--json", help="Print the card as JSON")] = False,
+    cards_dir: Annotated[
+        Path, typer.Option("--cards-dir", help="Where the dashboard reads cards from")
+    ] = CARDS_DIR,
+    no_store: Annotated[
+        bool, typer.Option("--no-store", help="Do not persist the card for the dashboard")
+    ] = False,
     config_path: Annotated[Path | None, typer.Option("--config", help="Config file")] = None,
 ) -> None:
     """Triage one failed task instance."""
@@ -112,10 +120,17 @@ def run(
     llm = build_client(config)
     card = _dispatch(incident, config=config, client=llm, retriever=retriever)
 
+    record_card(card)
+    card_id = None
+    if not no_store:
+        card_id = CardStore(cards_dir).save(card, incident)
+
     if as_json:
         console.print_json(card.model_dump_json())
     else:
         _render(card)
+        if card_id:
+            console.print(f"[dim]stored as {card_id} - `triage serve` to review it[/dim]")
     raise typer.Exit(0)
 
 
@@ -193,6 +208,24 @@ def eval_command(
     _render_gate(run, gate)
     console.print(f"[dim]report: {report.markdown_path}[/dim]")
     raise typer.Exit(gate.exit_code)
+
+
+@app.command()
+def serve(
+    host: Annotated[str, typer.Option("--host", help="Bind address")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", help="Bind port")] = 8000,
+    cards_dir: Annotated[
+        Path, typer.Option("--cards-dir", help="Where to read stored cards from")
+    ] = CARDS_DIR,
+    reload: Annotated[bool, typer.Option("--reload", help="Reload on source changes")] = False,
+) -> None:
+    """Serve the dashboard API: cards, feedback, eval reports, and /metrics."""
+    import uvicorn
+
+    from triage.server.app import create_app
+
+    console.print(f"Serving dag-doctor on http://{host}:{port} (cards: {cards_dir})")
+    uvicorn.run(create_app(cards_dir=cards_dir), host=host, port=port, reload=reload)
 
 
 def _render_gate(run, gate) -> None:

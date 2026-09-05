@@ -1,4 +1,4 @@
-.PHONY: check fmt lint test test-unit test-integration eval eval-fast eval-injection index up down
+.PHONY: check fmt lint test test-unit test-integration eval eval-fast eval-injection index serve web web-build up down
 
 check: lint test          ## same gate as CI: lint + unit + fixture tests
 
@@ -30,6 +30,15 @@ eval-injection:           ## adversarial subset only
 
 index:
 	uv run triage index --rebuild
+
+serve:                    ## dashboard API on :8000 (cards, feedback, /metrics)
+	uv run triage serve
+
+web:                      ## dashboard dev server on :5173, proxied to the API
+	cd web && npm install && npm run dev
+
+web-build:                ## typecheck + bundle the dashboard
+	cd web && npm ci && npm run build
 
 up:
 	docker compose up -d

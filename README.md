@@ -89,6 +89,8 @@ uv run triage run --fixture tests/fixtures/incident_missing_variable.json
 | `make fmt` | ruff format + autofix |
 | `uv run triage index --rebuild` | (re)index the retrieval corpus |
 | `uv run triage run --dag-id D --task-id T --run-id R [--try N]` | triage one live failure |
+| `uv run triage serve` | dashboard API: cards, feedback, eval reports, `/metrics` |
+| `cd web && npm run dev` | the dashboard on :5173 |
 | `uv run triage eval` | golden set → report + threshold gate |
 | `uv run triage eval --fast` | random subset for local iteration |
 | `uv run triage eval --label injection` | adversarial cases only |
@@ -107,13 +109,34 @@ src/triage/
   security/         sanitizer + injection detection
   card/             triage-card schema, citation validation
   eval/             harness, scorers, threshold gate, report writer
+  server/           dashboard API, card store, feedback write-back
+  metrics.py        Prometheus instrumentation
 broken_dags/        deliberately broken DAGs = labeled test corpus
 corpus/             vendored Airflow docs, Helm values, postmortems, PR threads
 evals/
   golden/           incident fixtures + labels, one per taxonomy class
   injection/        adversarial fixtures; the label is the real failure underneath
   thresholds.yaml   the gate
+web/                React + TypeScript dashboard
 ```
+
+## The dashboard
+
+```bash
+uv run triage serve       # API on :8000
+cd web && npm run dev     # dashboard on :5173
+```
+
+Review a verdict — root cause, confidence, citations with their quotes, and the
+full evidence trail — then correct it. A thumb writes a labeled case into
+`evals/golden/` with `source: human`, so feedback is scored by the same harness
+and gated by the same thresholds as an authored label. A thumbs-down has to name
+the correct category; feedback that only says "wrong" cannot be scored against.
+
+`/metrics` exports what is worth alerting on: triage latency and cost, steps
+spent, tool calls by outcome, security flags raised, parse failures, and how
+often the loop runs out of evidence. Instrumentation is passive — it reads a
+finished card, so no metric can change what the agent does.
 
 ## Configuration
 
@@ -139,7 +162,7 @@ metric, and it is not 100%.
 - **M1** — ingest from local Airflow, RAG over vendored docs, single-shot triage, CLI ✅
 - **M2** — agent loop with 6 tools, pgvector, structured output, evidence trail ✅
 - **M3** — eval harness, golden set, CI gate ✅ ← *the differentiator*
-- **M4** — React dashboard, feedback → golden set, Prometheus metrics on the agent
+- **M4** — React dashboard, feedback → golden set, Prometheus metrics on the agent ✅
 
 ## Testing
 
