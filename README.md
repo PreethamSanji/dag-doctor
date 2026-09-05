@@ -24,7 +24,9 @@ hypothesis, confidence, citations, suggested fix.
 **Evals are a regression gate, not a demo.** Changes to prompts, model config,
 retrieval, or the agent loop that drop triage quality fail CI. Root-cause
 accuracy, citation groundedness, hallucination rate, injection resistance, p95
-latency, and cost per triage are all scored against a golden set. *(M3)*
+latency, and cost per triage are all scored against a golden set. Every fixture
+needs a label or it is not an eval case, and `evals/thresholds.yaml` is the only
+place pass/fail lives.
 
 **Citations or it didn't happen.** Every claim on a card resolves to a chunk that
 was actually in model context during that run. A citation whose quote does not
@@ -87,7 +89,9 @@ uv run triage run --fixture tests/fixtures/incident_missing_variable.json
 | `make fmt` | ruff format + autofix |
 | `uv run triage index --rebuild` | (re)index the retrieval corpus |
 | `uv run triage run --dag-id D --task-id T --run-id R [--try N]` | triage one live failure |
-| `uv run triage eval` | golden set → reports + threshold gate *(M3)* |
+| `uv run triage eval` | golden set → report + threshold gate |
+| `uv run triage eval --fast` | random subset for local iteration |
+| `uv run triage eval --label injection` | adversarial cases only |
 | `docker compose up -d` | local Airflow + Postgres/pgvector |
 
 ## Layout
@@ -105,7 +109,10 @@ src/triage/
   eval/             harness, scorers, threshold gate, report writer
 broken_dags/        deliberately broken DAGs = labeled test corpus
 corpus/             vendored Airflow docs, Helm values, postmortems, PR threads
-evals/              golden set, adversarial fixtures, thresholds.yaml
+evals/
+  golden/           incident fixtures + labels, one per taxonomy class
+  injection/        adversarial fixtures; the label is the real failure underneath
+  thresholds.yaml   the gate
 ```
 
 ## Configuration
@@ -131,7 +138,7 @@ metric, and it is not 100%.
 
 - **M1** — ingest from local Airflow, RAG over vendored docs, single-shot triage, CLI ✅
 - **M2** — agent loop with 6 tools, pgvector, structured output, evidence trail ✅
-- **M3** — eval harness, golden set, CI gate ← *the differentiator*
+- **M3** — eval harness, golden set, CI gate ✅ ← *the differentiator*
 - **M4** — React dashboard, feedback → golden set, Prometheus metrics on the agent
 
 ## Testing
@@ -147,7 +154,12 @@ DATABASE_URL=postgresql://triage:triage@localhost:5432/triage uv run pytest -m p
 
 Unit tests are deterministic and offline. Integration tests replay the agent loop
 against recorded tool-call transcripts, so CI stays free and reproducible. The
-only tests that call a hosted LLM are the evals.
+only tests that call a hosted LLM are the evals — and even the eval *harness*
+is covered offline, replayed against recorded transcripts, so a broken harness
+fails in CI for free instead of during a run that costs money.
+
+`make check` also enforces the golden-set rules: an unlabeled fixture, a broken
+DAG no case covers, or a taxonomy class with no case fails the build.
 
 ## License
 

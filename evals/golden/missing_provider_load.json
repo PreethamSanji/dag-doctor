@@ -1,0 +1,54 @@
+{
+  "task_instance": {
+    "dag_id": "missing_provider_load",
+    "task_id": "load_to_warehouse",
+    "run_id": "manual__2025-08-12T09:30:00+00:00",
+    "try_number": 1,
+    "state": "failed",
+    "operator": "_PythonDecoratedOperator",
+    "max_tries": 1,
+    "pool": "default_pool",
+    "queue": "default",
+    "hostname": "airflow-worker-3b62",
+    "note": null,
+    "start_date": "2025-08-12T09:30:03+00:00",
+    "end_date": "2025-08-12T09:30:04+00:00",
+    "duration": 0.9
+  },
+  "log": {
+    "dag_id": "missing_provider_load",
+    "task_id": "load_to_warehouse",
+    "run_id": "manual__2025-08-12T09:30:00+00:00",
+    "try_number": 1,
+    "content": "[2025-08-12T09:30:03.220+0000] {taskinstance.py:2613} INFO - Executing <Task(_PythonDecoratedOperator): load_to_warehouse>\n[2025-08-12T09:30:03.410+0000] {logging_mixin.py:190} INFO - Opening warehouse connection\n[2025-08-12T09:30:04.001+0000] {taskinstance.py:2905} ERROR - Task failed with exception\nTraceback (most recent call last):\n  File \"/home/airflow/.local/lib/python3.12/site-packages/airflow/models/taskinstance.py\", line 465, in _execute_task\n    result = _execute_callable(context=context, **execute_callable_kwargs)\n  File \"/opt/airflow/dags/missing_provider_load.py\", line 24, in load_to_warehouse\n    from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook\nModuleNotFoundError: No module named 'airflow.providers.snowflake'\n[2025-08-12T09:30:04.155+0000] {taskinstance.py:1206} INFO - Marking task as FAILED. dag_id=missing_provider_load, task_id=load_to_warehouse\n"
+  },
+  "dag_source": {
+    "dag_id": "missing_provider_load",
+    "fileloc": "/opt/airflow/dags/missing_provider_load.py",
+    "source": "\"\"\"Ground truth: dependency_error.\n\nThe provider package is not installed in the image. The import sits inside the\ntask callable rather than at module level, so the DAG parses cleanly and only\nthis one task fails - which is what separates it from a parse-time import error.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport pendulum\nfrom airflow.decorators import dag, task\n\n\n@dag(\n    dag_id=\"missing_provider_load\",\n    schedule=None,\n    start_date=pendulum.datetime(2025, 1, 1, tz=\"UTC\"),\n    catchup=False,\n    tags=[\"broken\", \"dependency_error\"],\n)\ndef missing_provider_load():\n    @task\n    def load_to_warehouse() -> None:\n        print(\"Opening warehouse connection\")\n        from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook\n\n        SnowflakeHook(snowflake_conn_id=\"warehouse\").run(\"select 1\")\n\n    load_to_warehouse()\n\n\nmissing_provider_load()\n",
+    "last_parsed_time": "2025-08-11T02:14:00+00:00"
+  },
+  "history": [
+    {
+      "run_id": "manual__2025-08-12T09:12:00+00:00",
+      "try_number": 1,
+      "state": "failed",
+      "start_date": "2025-08-12T09:12:02+00:00",
+      "duration": 0.8
+    }
+  ],
+  "deploys": [
+    {
+      "sha": "9ea3417c00bd",
+      "author": "platform-team",
+      "committed_at": "2025-08-12T08:41:00+00:00",
+      "subject": "chore: slim the worker image to the core provider set",
+      "files": [
+        "docker/Dockerfile",
+        "requirements-providers.txt"
+      ]
+    }
+  ],
+  "dag_details": {},
+  "import_errors": []
+}

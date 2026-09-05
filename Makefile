@@ -1,4 +1,4 @@
-.PHONY: check fmt lint test test-unit test-integration eval index up down
+.PHONY: check fmt lint test test-unit test-integration eval eval-fast eval-injection index up down
 
 check: lint test          ## same gate as CI: lint + unit + fixture tests
 
@@ -19,8 +19,14 @@ test-unit:
 test-integration:
 	uv run pytest tests/integration -m "not llm"
 
-eval:
+eval:                     ## full golden set + threshold gate (calls an LLM)
 	uv run triage eval
+
+eval-fast:                ## random subset for local iteration; reports, does not gate
+	uv run triage eval --fast
+
+eval-injection:           ## adversarial subset only
+	uv run triage eval --label injection
 
 index:
 	uv run triage index --rebuild

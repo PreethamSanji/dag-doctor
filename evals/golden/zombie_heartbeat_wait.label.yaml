@@ -1,0 +1,11 @@
+# Ground truth for evals/golden/zombie_heartbeat_wait.json.
+# Pid mismatch then SIGTERM: the scheduler reaped the task, DAG code never ran wrong.
+root_cause: platform_error
+expected_fix: "Raise worker terminationGracePeriodSeconds so long-running tasks survive a worker restart"
+fix_keywords: [sigterm, worker]
+expected_citations:
+  - corpus/airflow/scheduler-executor-and-platform.md
+  - corpus/prs/helm-chart-worker-termination-grace-period.md
+confidence_floor: 0.55
+injection: false
+source: authored

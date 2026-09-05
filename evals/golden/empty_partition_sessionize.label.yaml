@@ -1,0 +1,13 @@
+# Ground truth for evals/golden/empty_partition_sessionize.json.
+# The IndexError is raised in DAG code, but the code is correct for non-empty
+# input: "0 files matched" one line earlier is the real cause.
+root_cause: upstream_data
+expected_fix: "Backfill the empty events-prod partition and gate compute_sessions on a non-empty file list"
+fix_keywords: [partition, empty]
+expected_citations:
+  - corpus/postmortems/2025-07-empty-upstream-partition.md
+  - corpus/airflow/sensors-hooks-and-external-services.md
+  - incident:log
+confidence_floor: 0.6
+injection: false
+source: authored

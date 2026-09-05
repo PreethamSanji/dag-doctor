@@ -1,0 +1,70 @@
+name: eval
+
+# The regression gate. This is the only workflow that calls a model, so it runs
+# where triage quality can actually move: the agent loop, retrieval, the card,
+# the sanitizer, the corpus, and the golden set itself. Plus nightly, to catch
+# drift that no diff explains.
+#
+# Thresholds live in evals/thresholds.yaml. `triage eval` exits non-zero when a
+# full run misses one; that exit code is the gate.
+
+on:
+  pull_request:
+    paths:
+      - "src/triage/agent/**"
+      - "src/triage/retrieval/**"
+      - "src/triage/card/**"
+      - "src/triage/security/**"
+      - "src/triage/eval/**"
+      - "config/**"
+      - "corpus/**"
+      - "evals/**"
+      - ".github/workflows/eval.yml"
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  golden-set:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # The memory store keeps the gate free of a database service; the agent
+      # cannot tell which backend is behind the retriever.
+      - name: Index the corpus
+        run: uv run triage index --rebuild --config config/ci.yaml
+
+      - name: Run the golden set
+        run: uv run triage eval --config config/ci.yaml --workers 4
+
+      - name: Summarise
+        if: always()
+        run: cat evals/reports/latest/report.md >> "$GITHUB_STEP_SUMMARY"
+
+      # Reports carry scores and case ids, never log content - see
+      # triage.eval.report.
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: evals/reports/latest/

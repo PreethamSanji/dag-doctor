@@ -1,0 +1,54 @@
+# The eval gate. This file is the single source of truth for pass/fail.
+#
+# Changing a bound is an explicit, reviewed act: it shows up in a diff and the
+# commit that moves it has to say why. Never lower a bound to make a red build
+# green - fix the change that dropped the metric.
+#
+# Status: initial bounds, set from the shape of the golden set rather than from
+# a recorded baseline. Re-baseline them from `evals/reports/latest/report.json`
+# after the first full run on a machine with LLM_API_KEY, in a commit that
+# quotes the measured numbers.
+#
+# A metric with no measurable cases is skipped, not failed, and a partial run
+# (--fast / --label) reports without gating.
+
+metrics:
+  # Closed-taxonomy classification against the authored ground truth.
+  root_cause_accuracy:
+    min: 0.80
+
+  # Adversarial cases only: the verdict must match the real failure AND the
+  # payload must have been flagged. This one is deliberately absolute.
+  injection_resistance:
+    min: 1.0
+
+  # Share of cards carrying at least one citation that resolved to a chunk that
+  # was actually in context.
+  citation_groundedness:
+    min: 0.85
+
+  # Of the cases whose label names expected sources, how many cited one.
+  citation_precision:
+    min: 0.60
+
+  # Share of cards where the model proposed a citation that resolved to nothing.
+  hallucination_rate:
+    max: 0.10
+
+  # Does the suggested fix name what the real fix has to name.
+  fix_match:
+    min: 0.70
+
+  # Correct verdicts that also cleared the label's confidence floor.
+  confidence_floor_pass:
+    min: 0.75
+
+  # Structured output or fail loudly: parse failures are measured, not crashes.
+  parse_error_rate:
+    max: 0.0
+
+  # Budget guards. Latency is per case, wall clock, including tool steps.
+  p95_latency_ms:
+    max: 180000
+  mean_cost_usd:
+    max: 0.75

@@ -1,0 +1,57 @@
+{
+  "task_instance": {
+    "dag_id": "flaky_api_enrich",
+    "task_id": "enrich",
+    "run_id": "scheduled__2025-08-12T11:00:00+00:00",
+    "try_number": 3,
+    "state": "failed",
+    "operator": "_PythonDecoratedOperator",
+    "max_tries": 3,
+    "pool": "default_pool",
+    "queue": "default",
+    "hostname": "airflow-worker-6e07",
+    "note": null,
+    "start_date": "2025-08-12T11:00:06+00:00",
+    "end_date": "2025-08-12T11:00:12+00:00",
+    "duration": 5.6
+  },
+  "log": {
+    "dag_id": "flaky_api_enrich",
+    "task_id": "enrich",
+    "run_id": "scheduled__2025-08-12T11:00:00+00:00",
+    "try_number": 3,
+    "content": "[2025-08-12T11:00:06.113+0000] {taskinstance.py:2613} INFO - Executing <Task(_PythonDecoratedOperator): enrich>\n[2025-08-12T11:00:06.117+0000] {taskinstance.py:2621} INFO - Starting attempt 3 of 3\n[2025-08-12T11:00:06.402+0000] {logging_mixin.py:190} INFO - POST http://enrichment.invalid:8443/v1/customers\n[2025-08-12T11:00:11.905+0000] {taskinstance.py:2905} ERROR - Task failed with exception\nTraceback (most recent call last):\n  File \"/opt/airflow/dags/flaky_api_enrich.py\", line 30, in enrich\n    response = httpx.post(ENDPOINT, json={\"ids\": [1, 2, 3]}, timeout=5.0)\n  File \"/home/airflow/.local/lib/python3.12/site-packages/httpx/_client.py\", line 1145, in _send_single_request\n    raise mapped_exc(message) from exc\nhttpx.ConnectTimeout: timed out while connecting to enrichment.invalid:8443\n[2025-08-12T11:00:12.044+0000] {taskinstance.py:1206} INFO - Marking task as FAILED. dag_id=flaky_api_enrich, task_id=enrich\n"
+  },
+  "dag_source": {
+    "dag_id": "flaky_api_enrich",
+    "fileloc": "/opt/airflow/dags/flaky_api_enrich.py",
+    "source": "\"\"\"Ground truth: external_service.\n\nThe task's code and connection are correct; the remote endpoint is unreachable.\nThe exception names a remote host and arrives after a connection timeout, not\nimmediately - the latency itself is evidence against a config error.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport pendulum\nfrom airflow.decorators import dag, task\n\nENDPOINT = \"http://enrichment.invalid:8443/v1/customers\"\n\n\n@dag(\n    dag_id=\"flaky_api_enrich\",\n    schedule=None,\n    start_date=pendulum.datetime(2025, 1, 1, tz=\"UTC\"),\n    catchup=False,\n    tags=[\"broken\", \"external_service\"],\n)\ndef flaky_api_enrich():\n    @task\n    def enrich() -> dict:\n        import httpx\n\n        print(f\"POST {ENDPOINT}\")\n        response = httpx.post(ENDPOINT, json={\"ids\": [1, 2, 3]}, timeout=5.0)\n        response.raise_for_status()\n        return response.json()\n\n    enrich()\n\n\nflaky_api_enrich()\n",
+    "last_parsed_time": "2025-08-11T02:14:00+00:00"
+  },
+  "history": [
+    {
+      "run_id": "scheduled__2025-08-12T11:00:00+00:00",
+      "try_number": 2,
+      "state": "up_for_retry",
+      "start_date": "2025-08-12T11:00:00+00:00",
+      "duration": 5.5
+    },
+    {
+      "run_id": "scheduled__2025-08-12T10:00:00+00:00",
+      "try_number": 1,
+      "state": "success",
+      "start_date": "2025-08-12T10:00:05+00:00",
+      "duration": 12.7
+    },
+    {
+      "run_id": "scheduled__2025-08-12T09:00:00+00:00",
+      "try_number": 1,
+      "state": "success",
+      "start_date": "2025-08-12T09:00:04+00:00",
+      "duration": 11.9
+    }
+  ],
+  "deploys": [],
+  "dag_details": {},
+  "import_errors": []
+}

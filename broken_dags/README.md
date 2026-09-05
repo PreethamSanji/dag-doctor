@@ -13,6 +13,7 @@ synthetic.
 | `memory_hog_rollup` | `aggregate` | `resource_exhaustion` |
 | `missing_provider_load` | `load_to_warehouse` | `dependency_error` |
 | `flaky_api_enrich` | `enrich` | `external_service` |
+| `zombie_heartbeat_wait` | `wait_for_slot` | `platform_error` |
 | `poisoned_log_report` | `report` | `config_error` + injection payload |
 
 `poisoned_log_report` is the adversarial case: the task log contains a prompt
@@ -34,6 +35,6 @@ Then triage the failure:
 uv run triage run --dag-id missing_variable_extract --task-id extract --run-id <run_id>
 ```
 
-Label files (`evals/golden/*.label.yaml`) and the eval gate land in M3. Until
-then these DAGs are the source of the incident fixtures used by the integration
-tests.
+Every DAG here has a labeled case in `evals/golden/` (or `evals/injection/`).
+`make check` fails on a broken DAG that no case covers, so adding one means
+adding its ground truth in the same commit — see `evals/README.md`.

@@ -8,6 +8,7 @@ alternate path.
 from __future__ import annotations
 
 import json
+import random
 from pathlib import Path
 from typing import Annotated
 
@@ -19,6 +20,10 @@ from rich.table import Table
 
 from triage.card.schema import IncidentKey, TriageCard
 from triage.config import load_config
+from triage.eval.gate import evaluate, load_thresholds
+from triage.eval.harness import run_suite
+from triage.eval.labels import UnlabeledFixtureError, discover_cases, filter_cases
+from triage.eval.report import REPORTS_DIR, write_report
 from triage.ingest.airflow_client import AirflowClient
 from triage.ingest.incident import ingest_incident, load_fixture, save_fixture
 from triage.llm import build_client
@@ -130,15 +135,94 @@ def _dispatch(incident, *, config, client, retriever) -> TriageCard:
 @app.command(name="eval")
 def eval_command(
     fast: Annotated[bool, typer.Option("--fast", help="Random subset for local iteration")] = False,
-    label: Annotated[str | None, typer.Option("--label", help="Only cases with this label")] = None,
+    label: Annotated[
+        str | None,
+        typer.Option("--label", help="Only cases with this suite or taxonomy label"),
+    ] = None,
+    subset: Annotated[int, typer.Option("--subset", help="Case count used by --fast")] = 4,
+    seed: Annotated[int, typer.Option("--seed", help="Sampling seed for --fast")] = 0,
+    workers: Annotated[int, typer.Option("--workers", help="Cases to run concurrently")] = 4,
+    out_dir: Annotated[Path, typer.Option("--out", help="Report directory")] = REPORTS_DIR,
+    config_path: Annotated[Path | None, typer.Option("--config", help="Config file")] = None,
 ) -> None:
-    """Run the golden set and apply the threshold gate. (M3)"""
+    """Run the golden set, write a report, and apply the threshold gate."""
+    config = _config(config_path)
+
+    try:
+        cases = discover_cases()
+    except UnlabeledFixtureError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(2) from exc
+
+    total = len(cases)
+    selected = filter_cases(cases, label)
+    if label and not selected:
+        console.print(f"[red]no cases match --label {label!r}[/red]")
+        raise typer.Exit(2)
+    if fast:
+        selected = random.Random(seed).sample(selected, k=min(subset, len(selected)))
+
+    retriever = Retriever(config)
+    if not retriever.count():
+        console.print("[yellow]Retrieval index is empty - run `triage index --rebuild`.[/yellow]")
+
     console.print(
-        "[yellow]`triage eval` lands in M3 with the golden set, scorers, and "
-        "evals/thresholds.yaml.[/yellow]"
+        f"Running {len(selected)} of {total} cases "
+        f"({config.agent.mode}, {config.agent.model}, {workers} workers)."
     )
-    console.print("Milestone status lives in CLAUDE.md.")
-    raise typer.Exit(2)
+
+    def announce(result) -> None:
+        mark = "[green]ok[/green]" if result.scored.correct else "[red]miss[/red]"
+        console.print(
+            f"  {mark} {result.case.case_id}: {result.scored.predicted} "
+            f"({result.scored.confidence:.2f})"
+        )
+
+    run = run_suite(
+        selected,
+        config=config,
+        client_factory=lambda: build_client(config),
+        retriever=retriever,
+        total_cases=total,
+        workers=workers,
+        on_case=announce,
+    )
+
+    gate = evaluate(run.metrics, load_thresholds(), full_run=run.full_run)
+    report = write_report(run, gate, config, out_dir=out_dir, label=label, fast=fast)
+    _render_gate(run, gate)
+    console.print(f"[dim]report: {report.markdown_path}[/dim]")
+    raise typer.Exit(gate.exit_code)
+
+
+def _render_gate(run, gate) -> None:
+    table = Table(title="eval metrics")
+    table.add_column("metric")
+    table.add_column("value", justify="right")
+    table.add_column("threshold", justify="right")
+    table.add_column("result")
+
+    bounds = {check.threshold.metric: check for check in gate.checks}
+    for name, value in run.metrics.items():
+        if name == "cases":
+            continue
+        check = bounds.get(name)
+        shown = "n/a" if value is None else f"{value:.3f}"
+        if check is None:
+            threshold, result = "-", "-"
+        else:
+            threshold = check.threshold.describe().split(" ", 1)[1]
+            result = "skipped" if check.skipped else ("pass" if check.passed else "[red]fail[/red]")
+        table.add_row(name, shown, threshold, result)
+    console.print(table)
+
+    if not gate.enforced:
+        console.print(f"[yellow]gate not enforced - {gate.reason}[/yellow]")
+    elif gate.passed:
+        console.print("[green]gate: PASS[/green]")
+    else:
+        failed = ", ".join(check.threshold.describe() for check in gate.failures)
+        console.print(f"[red]gate: FAIL - {failed}[/red]")
 
 
 def _render(card: TriageCard) -> None:

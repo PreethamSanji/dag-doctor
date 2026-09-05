@@ -94,3 +94,18 @@ def test_usage_accumulates_across_requests():
     assert usage.requests == 2
     assert usage.input_tokens == 2000
     assert usage.cost_usd == pytest.approx(price_of("claude-opus-5", 2000, 1000))
+
+
+def test_ci_eval_config_matches_the_shipped_agent_settings():
+    """The gate must run the agent we ship, not a cheaper stand-in.
+
+    Only the vector store differs: CI uses the JSON index so the eval workflow
+    needs no database service.
+    """
+    default = load_config("config/default.yaml")
+    ci = load_config("config/ci.yaml")
+
+    assert ci.agent.model_dump() == default.agent.model_dump()
+    assert ci.retrieval.k == default.retrieval.k
+    assert ci.security.model_dump() == default.security.model_dump()
+    assert ci.retrieval.store == "memory"

@@ -1,0 +1,50 @@
+{
+  "task_instance": {
+    "dag_id": "empty_partition_sessionize",
+    "task_id": "compute_sessions",
+    "run_id": "scheduled__2025-08-12T00:00:00+00:00",
+    "try_number": 1,
+    "state": "failed",
+    "operator": "_PythonDecoratedOperator",
+    "max_tries": 1,
+    "pool": "default_pool",
+    "queue": "default",
+    "hostname": "airflow-worker-9f30",
+    "note": null,
+    "start_date": "2025-08-12T00:05:11+00:00",
+    "end_date": "2025-08-12T00:05:12+00:00",
+    "duration": 1.1
+  },
+  "log": {
+    "dag_id": "empty_partition_sessionize",
+    "task_id": "compute_sessions",
+    "run_id": "scheduled__2025-08-12T00:00:00+00:00",
+    "try_number": 1,
+    "content": "[2025-08-12T00:05:11.204+0000] {taskinstance.py:2613} INFO - Executing <Task(_PythonDecoratedOperator): compute_sessions>\n[2025-08-12T00:05:11.310+0000] {logging_mixin.py:190} INFO - Reading s3://events-prod/dt=2025-08-11/\n[2025-08-12T00:05:11.311+0000] {logging_mixin.py:190} INFO - 0 files matched\n[2025-08-12T00:05:12.006+0000] {taskinstance.py:2905} ERROR - Task failed with exception\nTraceback (most recent call last):\n  File \"/home/airflow/.local/lib/python3.12/site-packages/airflow/models/taskinstance.py\", line 465, in _execute_task\n    result = _execute_callable(context=context, **execute_callable_kwargs)\n  File \"/opt/airflow/dags/empty_partition_sessionize.py\", line 37, in compute_sessions\n    first_ts = frames[0][\"event_ts\"]\n               ~~~~~~^^^\nIndexError: list index out of range\n[2025-08-12T00:05:12.180+0000] {taskinstance.py:1206} INFO - Marking task as FAILED. dag_id=empty_partition_sessionize, task_id=compute_sessions\n"
+  },
+  "dag_source": {
+    "dag_id": "empty_partition_sessionize",
+    "fileloc": "/opt/airflow/dags/empty_partition_sessionize.py",
+    "source": "\"\"\"Ground truth: upstream_data.\n\nThe exception is raised inside DAG code (`IndexError`), but the code is correct\nfor non-empty input and the log line before the traceback says `0 files matched`.\nThis is the case that punishes triage for reading only the last line.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport pendulum\nfrom airflow.decorators import dag, task\n\n#: Stands in for the producing job's output. Empty today: the producer is paused.\nPARTITION_FILES: list[str] = []\n\n\n@dag(\n    dag_id=\"empty_partition_sessionize\",\n    schedule=None,\n    start_date=pendulum.datetime(2025, 1, 1, tz=\"UTC\"),\n    catchup=False,\n    tags=[\"broken\", \"upstream_data\"],\n)\ndef empty_partition_sessionize():\n    @task\n    def discover(**context) -> list[str]:\n        prefix = f\"s3://events-prod/dt={context['ds']}/\"\n        print(f\"Reading {prefix}\")\n        print(f\"{len(PARTITION_FILES)} files matched\")\n        return PARTITION_FILES\n\n    @task\n    def compute_sessions(files: list[str]) -> int:\n        frames = [{\"event_ts\": index} for index in range(len(files))]\n        first_ts = frames[0][\"event_ts\"]\n        print(f\"First event at {first_ts}\")\n        return len(frames)\n\n    compute_sessions(discover())\n\n\nempty_partition_sessionize()\n",
+    "last_parsed_time": "2025-08-11T02:14:00+00:00"
+  },
+  "history": [
+    {
+      "run_id": "scheduled__2025-08-11T00:00:00+00:00",
+      "try_number": 1,
+      "state": "success",
+      "start_date": "2025-08-11T00:05:09+00:00",
+      "duration": 96.4
+    },
+    {
+      "run_id": "scheduled__2025-08-10T00:00:00+00:00",
+      "try_number": 1,
+      "state": "success",
+      "start_date": "2025-08-10T00:05:12+00:00",
+      "duration": 101.8
+    }
+  ],
+  "deploys": [],
+  "dag_details": {},
+  "import_errors": []
+}

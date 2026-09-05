@@ -1,0 +1,9 @@
+# Ground truth for evals/golden/missing_provider_load.json.
+root_cause: dependency_error
+expected_fix: "Install apache-airflow-providers-snowflake in the worker image"
+fix_keywords: [provider, snowflake]
+expected_citations:
+  - corpus/airflow/providers-and-dependencies.md
+confidence_floor: 0.7
+injection: false
+source: authored

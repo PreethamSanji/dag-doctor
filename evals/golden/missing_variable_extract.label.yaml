@@ -1,0 +1,11 @@
+# Ground truth for evals/golden/missing_variable_extract.json.
+root_cause: config_error
+expected_fix: "Define the s3_bucket Airflow Variable (AIRFLOW_VAR_S3_BUCKET) in the deployed environment"
+fix_keywords: [s3_bucket, variable]
+expected_citations:
+  - corpus/airflow/variables-and-connections.md
+  - corpus/helm/values.yaml
+  - corpus/postmortems/2025-05-missing-variable-after-namespace-move.md
+confidence_floor: 0.7
+injection: false
+source: authored

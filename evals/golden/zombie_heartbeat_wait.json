@@ -1,0 +1,60 @@
+{
+  "task_instance": {
+    "dag_id": "zombie_heartbeat_wait",
+    "task_id": "wait_for_slot",
+    "run_id": "scheduled__2025-08-13T04:00:00+00:00",
+    "try_number": 1,
+    "state": "failed",
+    "operator": "_PythonDecoratedOperator",
+    "max_tries": 1,
+    "pool": "default_pool",
+    "queue": "default",
+    "hostname": "airflow-worker-5aa9",
+    "note": null,
+    "start_date": "2025-08-13T04:00:09+00:00",
+    "end_date": "2025-08-13T04:06:22+00:00",
+    "duration": 373.1
+  },
+  "log": {
+    "dag_id": "zombie_heartbeat_wait",
+    "task_id": "wait_for_slot",
+    "run_id": "scheduled__2025-08-13T04:00:00+00:00",
+    "try_number": 1,
+    "content": "[2025-08-13T04:00:09.311+0000] {taskinstance.py:2613} INFO - Executing <Task(_PythonDecoratedOperator): wait_for_slot>\n[2025-08-13T04:00:09.700+0000] {logging_mixin.py:190} INFO - Holding a worker slot for 900s\n[2025-08-13T04:05:52.008+0000] {local_task_job_runner.py:301} WARNING - Recorded pid 348 does not match the current pid 1\n[2025-08-13T04:05:52.114+0000] {process_utils.py:131} INFO - Sending Signals.SIGTERM to group 348. PIDs of all processes in the group: [348]\n[2025-08-13T04:05:52.120+0000] {taskinstance.py:2905} ERROR - Received SIGTERM. Terminating subprocesses.\n[2025-08-13T04:06:22.441+0000] {local_task_job_runner.py:281} INFO - Task exited with return code Negsignal.SIGTERM\n[2025-08-13T04:06:22.520+0000] {taskinstance.py:1206} INFO - Marking task as FAILED. dag_id=zombie_heartbeat_wait, task_id=wait_for_slot\n"
+  },
+  "dag_source": {
+    "dag_id": "zombie_heartbeat_wait",
+    "fileloc": "/opt/airflow/dags/zombie_heartbeat_wait.py",
+    "source": "\"\"\"Ground truth: platform_error.\n\nThe task code is correct and does nothing but wait. It dies because the worker\nholding it is evicted and the scheduler reaps it: `Recorded pid does not match`,\nthen SIGTERM, then `Negsignal.SIGTERM`. No traceback from DAG code, no memory\ngrowth, and the same task succeeded yesterday with the same input - the evidence\nthat separates a platform kill from a code error or an OOM.\n\nReproduce by restarting the worker (or letting the node pool preempt it) while\nthis task holds its slot.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport time\n\nimport pendulum\nfrom airflow.decorators import dag, task\n\nHOLD_SECONDS = 900\n\n\n@dag(\n    dag_id=\"zombie_heartbeat_wait\",\n    schedule=None,\n    start_date=pendulum.datetime(2025, 1, 1, tz=\"UTC\"),\n    catchup=False,\n    tags=[\"broken\", \"platform_error\"],\n)\ndef zombie_heartbeat_wait():\n    @task\n    def wait_for_slot() -> int:\n        print(f\"Holding a worker slot for {HOLD_SECONDS}s\")\n        time.sleep(HOLD_SECONDS)\n        return HOLD_SECONDS\n\n    wait_for_slot()\n\n\nzombie_heartbeat_wait()\n",
+    "last_parsed_time": "2025-08-11T02:14:00+00:00"
+  },
+  "history": [
+    {
+      "run_id": "scheduled__2025-08-12T04:00:00+00:00",
+      "try_number": 1,
+      "state": "success",
+      "start_date": "2025-08-12T04:00:08+00:00",
+      "duration": 901.4
+    },
+    {
+      "run_id": "scheduled__2025-08-11T04:00:00+00:00",
+      "try_number": 1,
+      "state": "success",
+      "start_date": "2025-08-11T04:00:11+00:00",
+      "duration": 900.9
+    }
+  ],
+  "deploys": [
+    {
+      "sha": "5d21c9f4e770",
+      "author": "platform-team",
+      "committed_at": "2025-08-12T22:05:00+00:00",
+      "subject": "chore: drop worker terminationGracePeriodSeconds to 30",
+      "files": [
+        "chart/values-prod.yaml"
+      ]
+    }
+  ],
+  "dag_details": {},
+  "import_errors": []
+}

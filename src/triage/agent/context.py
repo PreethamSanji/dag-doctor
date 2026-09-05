@@ -19,7 +19,7 @@ from triage.card.citations import EvidenceIndex
 from triage.config import Config
 from triage.ingest.models import Incident
 from triage.retrieval.store import SearchResult
-from triage.security.sanitize import Sanitized, sanitize
+from triage.security.sanitize import Sanitized, detect_injection, neutralize, sanitize
 
 _CONTROL = re.compile(r"[\r\n\t]+")
 
@@ -28,6 +28,17 @@ def _scrub(value: object, limit: int = 200) -> str:
     """Flatten a free-text metadata field so it cannot forge structure."""
     text = _CONTROL.sub(" ", str(value if value is not None else "-")).strip()
     return text[:limit] if text else "-"
+
+
+def _scrub_untrusted(value: object, limit: int = 200) -> str:
+    """Scrub a metadata field that a human can write into.
+
+    The task-instance note is Airflow metadata, but its contents are typed by
+    whoever touched the task, so it is untrusted the same way a log line is. It
+    is flattened, then instruction-like spans are neutralized - detection is
+    handled by the caller, which owns the security flags.
+    """
+    return neutralize(_scrub(value, limit))
 
 
 @dataclass
@@ -63,7 +74,7 @@ def render_metadata(incident: Incident) -> str:
     if incident.dag_source:
         lines.append(f"dag_file: {_scrub(incident.dag_source.fileloc)}")
     if ti.note:
-        lines.append(f"note (operator-supplied, untrusted): {_scrub(ti.note)}")
+        lines.append(f"note (operator-supplied, untrusted): {_scrub_untrusted(ti.note)}")
     return "\n".join(lines)
 
 
@@ -92,6 +103,12 @@ def build_incident_context(incident: Incident, config: Config) -> IncidentContex
     """Sanitize every untrusted part of an incident into citable blocks."""
     context = IncidentContext(metadata=render_metadata(incident))
     caps = config.security
+
+    # The note is rendered as metadata rather than as an untrusted block, so it
+    # never passes through sanitize(); flag it here or a payload typed into the
+    # note would reach context unmeasured.
+    if incident.task_instance.note and detect_injection(incident.task_instance.note):
+        context.security_flags.append("injection_detected")
 
     _add_block(
         context,

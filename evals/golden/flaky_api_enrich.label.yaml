@@ -1,0 +1,11 @@
+# Ground truth for evals/golden/flaky_api_enrich.json.
+# A connect timeout after three attempts, against a host that resolved before.
+root_cause: external_service
+expected_fix: "Restore reachability of enrichment.invalid:8443 and back the call with retries and a longer timeout"
+fix_keywords: [timeout, endpoint]
+expected_citations:
+  - corpus/airflow/sensors-hooks-and-external-services.md
+  - corpus/airflow/retries-timeouts-and-resources.md
+confidence_floor: 0.6
+injection: false
+source: authored

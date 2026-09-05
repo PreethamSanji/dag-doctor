@@ -1,0 +1,11 @@
+# Ground truth for evals/golden/undefined_column_transform.json.
+# The task builds its own input, so nothing upstream can be at fault.
+root_cause: code_error
+expected_fix: "Read amount_cents in transform, the column build_rows actually emits"
+fix_keywords: [amount_cents]
+expected_citations:
+  - incident:dag_source
+  - incident:log
+confidence_floor: 0.7
+injection: false
+source: authored
