@@ -1,0 +1,27 @@
+# Model + loop configuration. Never hardcode these in source.
+# Evals diff this file: a change here without an eval run is an invalid change.
+
+agent:
+  model: claude-opus-5
+  max_tokens: 8000
+  effort: high            # low | medium | high | xhigh | max
+  max_steps: 8            # bounded agent loop; exhaustion -> insufficient_evidence
+  structured_retries: 1   # one structured retry, then a parse-error card
+  mode: single_shot       # single_shot (M1) | agent (M2+)
+
+retrieval:
+  k: 6
+  chunk_tokens: 320
+  chunk_overlap: 60
+  embedder: hashing       # hashing (offline, deterministic) | voyage
+  embedding_dim: 512
+  store: memory           # memory (JSON index, no services) | pgvector
+  corpus_dir: corpus
+
+ingest:
+  log_tail_lines: 400
+  history_runs: 10
+
+security:
+  max_untrusted_chars: 20000
+  max_field_chars: 4000

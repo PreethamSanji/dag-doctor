@@ -1,0 +1,39 @@
+name: ci
+
+# Fast gate: lint, unit tests, and replayed integration tests. No network, no
+# LLM, no API key. The LLM-gated eval suite runs in eval.yml (M3).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run ruff format --check . && uv run ruff check .
+
+      - name: Test
+        run: uv run pytest -m "not llm"
+
+      - name: Corpus provenance
+        run: uv run python -c "from triage.retrieval.corpus import load_corpus; print(f'{len(load_corpus(\"corpus\"))} documents, all with provenance')"

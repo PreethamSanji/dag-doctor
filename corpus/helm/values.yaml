@@ -1,0 +1,69 @@
+---
+title: Airflow Helm chart values (annotated excerpt)
+source_url: https://github.com/apache/airflow/blob/main/chart/values.yaml
+license: Apache-2.0
+tags: [config_error, resource_exhaustion, helm]
+---
+
+# Excerpt of the official Apache Airflow Helm chart values, annotated with the
+# failure each setting causes when it is wrong. Line references are to the
+# upstream chart.
+
+# Environment variables injected into every Airflow component. This is how
+# Variables reach a Helm-deployed Airflow: AIRFLOW_VAR_<KEY> backs
+# Variable.get("<key>"). A variable that exists in staging but not production is
+# almost always a missing entry here.
+env:
+  - name: AIRFLOW_VAR_S3_BUCKET
+    value: "analytics-prod"
+  - name: AIRFLOW_VAR_WAREHOUSE_SCHEMA
+    value: "reporting"
+
+# Connections are supplied as AIRFLOW_CONN_<CONN_ID> URIs, usually from a secret
+# rather than inline. A missing entry raises AirflowNotFoundException at task
+# runtime, not at parse time.
+secret:
+  - envName: AIRFLOW_CONN_WAREHOUSE
+    secretName: airflow-connections
+    secretKey: warehouse
+
+# Worker resources. The memory limit here is the OOM-kill threshold: a task that
+# exceeds it is SIGKILLed and its log ends with
+# "Task exited with return code Negsignal.SIGKILL" and no traceback.
+workers:
+  replicas: 2
+  resources:
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+  # Grace period before a terminating worker's tasks are killed. Too low and
+  # long-running tasks are SIGTERMed during a routine rollout, which looks like
+  # a random failure but correlates exactly with deploy times.
+  terminationGracePeriodSeconds: 600
+
+scheduler:
+  replicas: 1
+  resources:
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+# The image every component runs. Provider packages must be baked in here;
+# installing them at runtime does not survive a pod restart, which is why a
+# ModuleNotFoundError can appear hours after the pip install "fixed" it.
+images:
+  airflow:
+    repository: apache/airflow
+    tag: 2.10.5-python3.12
+
+config:
+  core:
+    parallelism: "32"
+    max_active_tasks_per_dag: "16"
+  scheduler:
+    # A task whose heartbeat is older than this is declared a zombie and failed.
+    scheduler_zombie_task_threshold: "300"
+    dag_dir_list_interval: "30"
