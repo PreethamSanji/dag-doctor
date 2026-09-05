@@ -48,4 +48,5 @@ addopts = "-q"
 markers = [
     "llm: tests that call a hosted LLM (excluded from `make check`)",
     "integration: replayed transcripts, no network",
+    "pgvector: needs a reachable DATABASE_URL (docker compose up -d db)",
 ]

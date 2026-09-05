@@ -38,12 +38,28 @@ neutralized, and flagged — and injection resistance is measured, not assumed.
 
 **Multi-step by design.** The loop is the point: form a hypothesis, gather the
 evidence that would kill it, narrow, commit. It is bounded at `max_steps`; on
-exhaustion it emits a low-confidence verdict with `insufficient_evidence: true`
-rather than guessing confidently.
+exhaustion it emits a verdict with `insufficient_evidence: true` and a capped
+confidence — enforced in the loop, not requested in the prompt. The full
+`(tool, args, result-digest)` trace ships in the card as `evidence_trail`.
 
 **Real ground truth.** We author the broken DAGs, so every test failure has known
 ground truth — but a real Airflow runs them, so the logs and metadata ingested
 are genuine, not synthetic fixtures.
+
+## The tools
+
+| Tool | Evidence it gathers |
+| --- | --- |
+| `search_logs` | lines in this task's log matching a pattern, with context — including the informative zero-match |
+| `get_task_history` | recent runs of the same task: *would this code have succeeded on yesterday's input?* |
+| `fetch_dag_source` | the DAG file, whole or grepped — is the import at module level or inside the task? |
+| `query_runbook` | retrieval over the corpus; the only source of citable external evidence |
+| `check_recent_deploys` | commits touching the DAG file, with time deltas to the failure |
+| `get_prometheus_metric` | resource evidence a log cannot carry — and says so when no backend is configured |
+
+Every tool result is sanitized by the loop before it enters context, registered
+in the evidence index under the id the model is shown, and recorded in the
+evidence trail. `fetch_dag_source` gets no exemption for being code.
 
 ## Quickstart
 
@@ -114,7 +130,7 @@ metric, and it is not 100%.
 ## Milestones
 
 - **M1** — ingest from local Airflow, RAG over vendored docs, single-shot triage, CLI ✅
-- **M2** — agent loop with 6 tools, pgvector, structured output, evidence trail
+- **M2** — agent loop with 6 tools, pgvector, structured output, evidence trail ✅
 - **M3** — eval harness, golden set, CI gate ← *the differentiator*
 - **M4** — React dashboard, feedback → golden set, Prometheus metrics on the agent
 
@@ -122,7 +138,11 @@ metric, and it is not 100%.
 
 ```bash
 make check        # lint + unit + integration, no network, no LLM
-make test-unit    # sanitizer, citation validation, schema, chunking
+make test-unit    # sanitizer, citation validation, schema, chunking, tools
+
+# pgvector tests, skipped by default because they need a live Postgres:
+docker compose up -d db
+DATABASE_URL=postgresql://triage:triage@localhost:5432/triage uv run pytest -m pgvector
 ```
 
 Unit tests are deterministic and offline. Integration tests replay the agent loop

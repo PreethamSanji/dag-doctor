@@ -7,7 +7,7 @@ agent:
   effort: high            # low | medium | high | xhigh | max
   max_steps: 8            # bounded agent loop; exhaustion -> insufficient_evidence
   structured_retries: 1   # one structured retry, then a parse-error card
-  mode: single_shot       # single_shot (M1) | agent (M2+)
+  mode: agent             # single_shot (M1 baseline) | agent (M2+)
 
 retrieval:
   k: 6
@@ -15,7 +15,7 @@ retrieval:
   chunk_overlap: 60
   embedder: hashing       # hashing (offline, deterministic) | voyage
   embedding_dim: 512
-  store: memory           # memory (JSON index, no services) | pgvector
+  store: pgvector         # pgvector (docker compose 'db') | memory (JSON index)
   corpus_dir: corpus
 
 ingest:
@@ -25,3 +25,4 @@ ingest:
 security:
   max_untrusted_chars: 20000
   max_field_chars: 4000
+  max_tool_result_chars: 12000

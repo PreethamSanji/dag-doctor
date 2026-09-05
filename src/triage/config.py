@@ -44,6 +44,7 @@ class IngestConfig(BaseModel):
 class SecurityConfig(BaseModel):
     max_untrusted_chars: int = 20000
     max_field_chars: int = 4000
+    max_tool_result_chars: int = 12000
 
 
 class Env(BaseModel):

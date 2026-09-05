@@ -83,6 +83,7 @@ class LLMClient(Protocol):
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None = None,
         output_schema: dict[str, Any] | None = None,
+        tool_choice: dict[str, Any] | None = None,
         max_tokens: int = 8000,
     ) -> Completion: ...
 
@@ -116,6 +117,7 @@ class AnthropicClient:
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None = None,
         output_schema: dict[str, Any] | None = None,
+        tool_choice: dict[str, Any] | None = None,
         max_tokens: int = 8000,
     ) -> Completion:
         output_config: dict[str, Any] = {"effort": self._effort}
@@ -131,6 +133,8 @@ class AnthropicClient:
         }
         if tools:
             kwargs["tools"] = tools
+            if tool_choice is not None:
+                kwargs["tool_choice"] = tool_choice
 
         response = self._client.messages.create(**kwargs)
         return Completion(
@@ -171,6 +175,7 @@ class ReplayClient:
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None = None,
         output_schema: dict[str, Any] | None = None,
+        tool_choice: dict[str, Any] | None = None,
         max_tokens: int = 8000,
     ) -> Completion:
         if self._cursor >= len(self.completions):
